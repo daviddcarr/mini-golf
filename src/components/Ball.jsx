@@ -39,7 +39,7 @@ export default function Ball() {
         forceMultiplier: { value: 6, min: 0, max: 10, step: 0.1 },
     })
 
-    const arrowGltf = useGLTF("./glb/arrow.glb")
+    const arrowGltf = useGLTF("./glb/Arrow.glb")
 
     const handlePointerDown = (event) => {
         // When user clicks on sphere, start tracking pointer movement
