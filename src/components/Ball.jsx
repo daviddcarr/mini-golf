@@ -13,7 +13,7 @@ import { useControls } from "leva"
 export default function Ball() {
 
     const [ cameraMode ] = useGame(state => [ state.cameraMode ])
-    // const { camera } = useCamera()
+    const { camera } = useCamera()
 
     const ballRef = useRef()
     const planeRef = useRef()
@@ -43,12 +43,16 @@ export default function Ball() {
 
     const handlePointerDown = (event) => {
         // When user clicks on sphere, start tracking pointer movement
-        setIsDragging(true)
+        const vel = ballRef.current.linvel()
+        const velVector = new Vector3(vel.x, vel.y, vel.z)
+        if (cameraMode !== "free" && ballRef.current && velVector.length() < 0.1) {
+            setIsDragging(true)
+        }
     }
 
     const handlePointerMove = (event) => {
         // Track pointer movement here if user has clicked on sphere and hasn't released pointer and update force vector
-        if (isDragging && ballRef.current) {
+        if (cameraMode !== "free" && isDragging && ballRef.current) {
             console.log("pointer move")
             const ballPosition = ballRef.current.translation()
             const ballPositionVector = new Vector3(ballPosition.x, ballPosition.y, ballPosition.z)
@@ -72,7 +76,7 @@ export default function Ball() {
             // Stop tracking pointer movement and apply force to sphere
             setIsDragging(false)
             
-            if (ballRef.current && forceVector) {
+            if (cameraMode !== "free" && ballRef.current && forceVector) {
                 const force = forceVector.clone().multiplyScalar(forceMultiplier)
                 console.log("forceVector", forceVector)
                 ballRef.current.applyImpulse(force, true)
@@ -106,29 +110,30 @@ export default function Ball() {
 
     useFrame(({camera}) => {
         // Keep plane position in sync with ball position
-        if (ballRef.current && planeRef.current.position) {
-            const ballPosition = ballRef.current.translation()
-            planeRef.current.position.set(ballPosition.x, ballPosition.y + 0.01, ballPosition.z)
-            arrowRef.current.position.set(ballPosition.x, ballPosition.y + 0.01, ballPosition.z)
-        }
     
-        updateArrow()
-
-        if (cameraMode === "follow" && ballRef.current) {
+        if (ballRef.current) {
             const ballPosition = ballRef.current.translation()
             const ballPositionVector = new Vector3(ballPosition.x, ballPosition.y, ballPosition.z)
+            
+            if (planeRef.current.position) {
+                planeRef.current.position.set(ballPosition.x, ballPosition.y + 0.01, ballPosition.z)
+                arrowRef.current.position.set(ballPosition.x, ballPosition.y + 0.01, ballPosition.z)
+            }
 
+            updateArrow()
 
-            // const cameraPosition = ballPositionVector.clone().add(new Vector3(0, 5, 5))
-            const cameraLookAt = ballPositionVector.clone()
-            camera.lookAt(cameraLookAt)
+            if (cameraMode === "follow") {
+                const cameraLookAt = ballPositionVector.clone()
+                camera.lookAt(cameraLookAt)
 
-            // add cameraOffset to ball position to get new camera position
-            const cameraPosition = ballPositionVector.clone().add(cameraOffset)
+                // add cameraOffset to ball position to get new camera position
+                const cameraPosition = ballPositionVector.clone().add(cameraOffset)
 
-            camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z)
-        } else {
-            setCameraOffset(camera.position.clone())
+                camera.position.lerp(cameraPosition, 0.1)
+            } else {
+                setCameraOffset(camera.position.clone().sub(ballPositionVector))
+            }
+
         }
     })
 
