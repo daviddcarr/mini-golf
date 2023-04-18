@@ -72,7 +72,6 @@ export default function Ball({ setOrbitTarget }) {
             forceDirection.y = 0
 
             setForceVector(forceDirection)
-            console.log("forceDirection", forceDirection)
         }
     }
 
