@@ -1,9 +1,9 @@
-import { useRef, useState, useMemo, useEffect } from "react"
+import { useRef, useState, useEffect } from "react"
 import { Vector3 } from "three"
 import {
     RigidBody,
 } from "@react-three/rapier"
-import { useGLTF, useCamera } from "@react-three/drei"
+import { useGLTF } from "@react-three/drei"
 import { useFrame } from "@react-three/fiber"
 
 import { useGame } from "../hooks/useGame"
@@ -12,8 +12,7 @@ import { useControls } from "leva"
 
 export default function Ball({ setOrbitTarget }) {
 
-    const [ cameraMode ] = useGame(state => [ state.cameraMode ])
-    const { camera } = useCamera()
+    const [ cameraMode, addStroke ] = useGame(state => [ state.cameraMode, state.addStroke ])
 
     const ballRef = useRef()
     const planeRef = useRef()
@@ -37,32 +36,25 @@ export default function Ball({ setOrbitTarget }) {
         linearDamping: { value: 0.2, min: 0, max: 1, step: 0.1 },
         angularDamping: { value: 0.2, min: 0, max: 1, step: 0.1 },
         mass: { value: 1, min: 0, max: 10, step: 0.1 },
-        forceMultiplier: { value: 0.001, min: 0, max: 2, step: 0.001 },
+        forceMultiplier: { value: 0.0005, min: 0, max: 2, step: 0.0001 },
     })
 
     const arrowGltf = useGLTF("./glb/Arrow.glb")
+    const ballGltf = useGLTF("./glb/Ball.glb")
 
     const handlePointerDown = (event) => {
         // When user clicks on sphere, start tracking pointer movement
         const vel = ballRef.current.linvel()
         const velVector = new Vector3(vel.x, vel.y, vel.z)
-        if (cameraMode !== "free" && ballRef.current && velVector.length() < 0.1) {
+        if (cameraMode !== "free" && ballRef.current && velVector.length() < 0.01) {
             setIsDragging(true)
         }
     }
 
     const handlePointerMove = (event) => {
         // Track pointer movement here if user has clicked on sphere and hasn't released pointer and update force vector
-        
-        // if (ballRef.current) {
-        //     const ballPosition = ballRef.current.translation()
-        //     const ballPositionVector = new Vector3(ballPosition.x, ballPosition.y, ballPosition.z)
-        //     const pointerPosition = event.point
-        //     const relativePosition = pointerPosition.clone().sub(ballPositionVector) 
-        //     console.log("Hovering", relativePosition)
-        // }
+    
         if (cameraMode !== "free" && isDragging && ballRef.current) {
-            console.log("pointer move")
             const ballPosition = ballRef.current.translation()
             const ballPositionVector = new Vector3(ballPosition.x, ballPosition.y, ballPosition.z)
             const pointerPosition = event.point
@@ -71,13 +63,16 @@ export default function Ball({ setOrbitTarget }) {
             const forceDirection = pointerPosition.sub(ballPositionVector.clone())
 
             forceDirection.y = 0
-
+            
             const maxForce = 50
             if (forceDirection.length() > maxForce) {
                 forceDirection.normalize().multiplyScalar(maxForce)
             }
 
+            forceDirection.y = 0
+
             setForceVector(forceDirection)
+            console.log("forceDirection", forceDirection)
         }
     }
 
@@ -86,10 +81,11 @@ export default function Ball({ setOrbitTarget }) {
             // Stop tracking pointer movement and apply force to sphere
             setIsDragging(false)
             
-            if (cameraMode !== "free" && ballRef.current && forceVector) {
+            if (cameraMode === "follow" && ballRef.current && forceVector) {
                 const force = forceVector.clone().multiplyScalar(forceMultiplier)
                 console.log("forceVector", forceVector)
                 ballRef.current.applyImpulse(force, true)
+                addStroke()
             }
 
             setForceVector(null)
@@ -111,7 +107,7 @@ export default function Ball({ setOrbitTarget }) {
             const arrowDirection = forceVector.clone().normalize().negate()
             arrowGltf.scene.lookAt(arrowGltf.scene.position.clone().add(arrowDirection))
 
-            const arrowScale = forceVector.length() * 500
+            const arrowScale = forceVector.length() * 100
 
             // console.log("arrowScale", arrowScale)
 
@@ -157,16 +153,6 @@ export default function Ball({ setOrbitTarget }) {
         }
     })
 
-    const ballGltf = useGLTF("./glb/Ball.glb")
-
-
-    // make ballGltf cast shadow
-    ballGltf.scene.traverse((child) => {
-        if (child.isMesh) {
-            child.castShadow = true
-        }
-    })
-
     return (
         <>
 
@@ -198,9 +184,11 @@ export default function Ball({ setOrbitTarget }) {
                 <circleGeometry args={[1, 12]} />
                 <meshStandardMaterial color="pink" />
             </mesh>
+
             <primitive 
                 object={arrowGltf.scene}
                 ref={arrowRef}
+                visible={isDragging}
                 />
         </>
     )

@@ -1,45 +1,68 @@
 import { useMemo } from "react"
 import { useGLTF } from "@react-three/drei"
 import { RigidBody, CuboidCollider } from "@react-three/rapier"
+import { useControls } from "leva"
 
 export default function CourseSection({position, rotation, type}) {
 
+    const coursePhysics = useControls("Level Physics", {
+        grassRestitution: { value: 0.5, min: 0, max: 1, step: 0.1 },
+        grassFriction: { value: 0.5, min: 0, max: 1, step: 0.1 },
+        wallRestitution: { value: 1, min: 0, max: 1, step: 0.1 },
+        wallFriction: { value: 0.5, min: 0, max: 1, step: 0.1 },
+      })
+
+
     switch (type) {
         case "start":
-            return <CourseStart position={position} rotation={rotation} />
+            return <CourseStart position={position} rotation={rotation} coursePhysics={coursePhysics} />
         case "corner":
-            return <CourseCorner position={position} rotation={rotation} />
+            return <CourseCorner position={position} rotation={rotation} coursePhysics={coursePhysics} />
         case "end":
-            return <CourseEnd position={position} rotation={rotation} />
+            return <CourseEnd position={position} rotation={rotation} coursePhysics={coursePhysics} />
         default:
-            return <CourseStraight position={position} rotation={rotation} />
+            return <CourseStraight position={position} rotation={rotation} coursePhysics={coursePhysics} />
     }
 }
 
 export function CourseStart(props) {
     
     const gltf = useGLTF('./glb/Course_Start.glb')
-    // gltf.nodes.CourseStart
 
     const mesh = useMemo(() => {
-        return gltf.nodes.CourseStart
+        console.log(gltf.nodes)
+        return gltf.nodes
     }, [gltf])
 
     return (
-        <RigidBody
-            {...props}
-            type="fixed"
-            colliders="trimesh"
-            >
-            <primitive
-                object={gltf.scene}
-                />
-            <mesh 
-                geometry={mesh.geometry}
-                material={mesh.material}
+        <>
+            <RigidBody
+                {...props}
+                type="fixed"
+                colliders="trimesh"
+                restitution={props.coursePhysics.grassRestitution}
+                friction={props.coursePhysics.grassFriction}
+                >
+                <mesh 
+                    geometry={mesh.CourseStartGreen.geometry}
+                    material={mesh.CourseStartGreen.material}
+                    receiveShadow
+                    />
+            </RigidBody>
+            <RigidBody
+                {...props}
+                type="fixed"
+                colliders="trimesh"
+                restitution={props.coursePhysics.wallRestitution}
+                friction={props.coursePhysics.wallFriction}
+                >
+                <mesh
+                geometry={mesh.CourseStartWalls.geometry}
+                material={mesh.CourseStartWalls.material}
                 receiveShadow
                 />
-        </RigidBody>
+            </RigidBody>
+        </>
     )
 }
 
@@ -48,22 +71,39 @@ export function CourseStraight(props) {
     const gltf = useGLTF('./glb/Course_Straight.glb')
     
     const mesh = useMemo(() => {
-        return gltf.nodes.CourseStraight
+        return gltf.nodes
     }, [gltf])
 
     return (
-        <RigidBody
-            {...props}
-            type="fixed"
-            colliders="trimesh"
-            >
-            <mesh
-                geometry={mesh.geometry}
-                material={mesh.material}
-                receiveShadow
-                />
-            {/* <CuboidCollider position={[0, -0.05, 0]} args={[1, 0.05, 0.5]} /> */}
-        </RigidBody>
+        <>
+            <RigidBody
+                {...props}
+                type="fixed"
+                colliders="trimesh"
+                restitution={props.coursePhysics.grassRestitution}
+                friction={props.coursePhysics.grassFriction}
+                >
+                <mesh
+                    geometry={mesh.CourseStraightGreen.geometry}
+                    material={mesh.CourseStraightGreen.material}
+                    receiveShadow
+                    />
+            </RigidBody>
+            <RigidBody
+                {...props}
+                type="fixed"
+                colliders="trimesh"
+                restitution={props.coursePhysics.wallRestitution}
+                friction={props.coursePhysics.wallFriction}
+                >
+                <mesh
+                    geometry={mesh.CourseStraightWalls.geometry}
+                    material={mesh.CourseStraightWalls.material}
+                    receiveShadow
+                    />
+            </RigidBody>
+        </>
+
     )
 }
 
@@ -72,21 +112,38 @@ export function CourseCorner(props) {
     const gltf = useGLTF('./glb/Course_Corner.glb')
 
     const mesh = useMemo(() => {
-        return gltf.nodes.CourseTurn
+        return gltf.nodes
     }, [gltf])
 
     return (
-        <RigidBody
-            {...props}
-            type="fixed"
-            colliders="trimesh"
-            >
-            <mesh
-                geometry={mesh.geometry}
-                material={mesh.material}
-                receiveShadow
-                />
-        </RigidBody>
+        <>
+            <RigidBody
+                {...props}
+                type="fixed"
+                colliders="trimesh"
+                restitution={props.coursePhysics.grassRestitution}
+                friction={props.coursePhysics.grassFriction}
+                >
+                <mesh
+                    geometry={mesh.CourseTurnGreen.geometry}
+                    material={mesh.CourseTurnGreen.material}
+                    receiveShadow
+                    />
+            </RigidBody>
+            <RigidBody
+                {...props}
+                type="fixed"
+                colliders="trimesh"
+                restitution={props.coursePhysics.wallRestitution}
+                friction={props.coursePhysics.wallFriction}
+                >
+                <mesh
+                    geometry={mesh.CourseTurnWalls.geometry}
+                    material={mesh.CourseTurnWalls.material}
+                    receiveShadow
+                    />
+            </RigidBody>
+        </>
     )
 }
 
@@ -95,26 +152,42 @@ export function CourseEnd(props) {
     const gltf = useGLTF('./glb/Course_End.glb')
 
     const mesh = useMemo(() => {
-        console.log(gltf.nodes)
-        return gltf.nodes.CourseEnd
+        return gltf.nodes
     }, [gltf])
 
     return (
-        <RigidBody
-            {...props}
-            type="fixed"
-            colliders="trimesh"
-            >
-            <mesh
-                geometry={mesh.children[0].geometry}
-                material={mesh.children[0].material}
-                receiveShadow
-                />
-            <mesh
-                geometry={mesh.children[1].geometry}
-                material={mesh.children[1].material}
-                receiveShadow
-                />
-        </RigidBody>
+        <>
+            <RigidBody
+                {...props}
+                type="fixed"
+                colliders="trimesh"
+                restitution={props.coursePhysics.grassRestitution}
+                friction={props.coursePhysics.grassFriction}
+                >
+                <mesh
+                    geometry={mesh.CourseEndGreen.children[0].geometry}
+                    material={mesh.CourseEndGreen.children[0].material}
+                    receiveShadow
+                    />
+                <mesh
+                    geometry={mesh.CourseEndGreen.children[1].geometry}
+                    material={mesh.CourseEndGreen.children[1].material}
+                    receiveShadow
+                    />
+            </RigidBody>
+            <RigidBody
+                {...props}
+                type="fixed"
+                colliders="trimesh"
+                restitution={props.coursePhysics.wallRestitution}
+                friction={props.coursePhysics.wallFriction}
+                >
+                <mesh
+                    geometry={mesh.CourseEndWalls.geometry}
+                    material={mesh.CourseEndWalls.material}
+                    receiveShadow
+                    />
+            </RigidBody>
+        </>
     )
 }

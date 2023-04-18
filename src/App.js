@@ -13,21 +13,9 @@ import CourseSection from './components/CourseSection'
 
 function App() {
 
-  const [ cameraMode, setCameraMode, toggleCameraMode ] = useGame((state) => [ state.cameraMode, state.setCameraMode, state.toggleCameraMode ])
+  const [ cameraMode, setCameraMode, toggleCameraMode, strokeCount ] = useGame((state) => [ state.cameraMode, state.setCameraMode, state.toggleCameraMode, state.strokeCount ])
 
   const [ orbitTarget, setOrbitTarget ] = useState([0, 0, 0])
-
-  const {
-    grassRestitution,
-    grassFriction,
-    wallRestitution,
-    wallFriction,
-  } = useControls("Level Physics", {
-    grassRestitution: { value: 0.5, min: 0, max: 1, step: 0.1 },
-    grassFriction: { value: 0.5, min: 0, max: 1, step: 0.1 },
-    wallRestitution: { value: 1, min: 0, max: 1, step: 0.1 },
-    wallFriction: { value: 0.5, min: 0, max: 1, step: 0.1 },
-  })
 
   return (
     <>
@@ -39,7 +27,12 @@ function App() {
           >
           <Sky sunPosition={[2, 2, 2]} />
           <Environment preset="sunset" />
-          <directionalLight position={[2, 2, 2]} intensity={1} castShadow />
+          <directionalLight 
+            position={[2, 2, 2]} 
+            intensity={1} 
+            castShadow 
+            />
+
           <OrbitControls 
             makeDefault 
             enabled={cameraMode === 'free'} 
@@ -66,14 +59,16 @@ function App() {
         </Canvas>
 
         <div className="absolute inset-0 w-full h-full pointer-events-none">
-          <div className="flex justify-between absolute bottom-0  p-4">
+          <div className="flex justify-between absolute bottom-0 w-full p-4 items-center">
             <button
               className="bg-gray-700 hover:bg-purple-600 text-white p-2 rounded-md pointer-events-auto"
               onClick={toggleCameraMode}
               >
               {cameraMode === 'free' ? 'Play Mode' : 'Free Camera'}
             </button>
-
+            <div className="bg-white p-2 rounded-md">
+              <p>Stroke Count: { strokeCount }</p>
+            </div>
           </div>
         </div>
 
