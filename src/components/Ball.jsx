@@ -10,7 +10,7 @@ import { useGame } from "../hooks/useGame"
 
 import { useControls } from "leva"
 
-export default function Ball() {
+export default function Ball({ setOrbitTarget }) {
 
     const [ cameraMode ] = useGame(state => [ state.cameraMode ])
     const { camera } = useCamera()
@@ -22,6 +22,7 @@ export default function Ball() {
     const [isDragging, setIsDragging] = useState(false)
     const [forceVector, setForceVector] = useState(null)
     const [cameraOffset, setCameraOffset] = useState(new Vector3(0, 2, 5))
+    const [freeCameraSet, setFreeCameraSet] = useState(false)
 
     const {
         restitution,
@@ -35,8 +36,8 @@ export default function Ball() {
         friction: { value: 1, min: 0, max: 1, step: 0.1 },
         linearDamping: { value: 0.2, min: 0, max: 1, step: 0.1 },
         angularDamping: { value: 0.2, min: 0, max: 1, step: 0.1 },
-        mass: { value: 0.3, min: 0, max: 10, step: 0.1 },
-        forceMultiplier: { value: 6, min: 0, max: 10, step: 0.1 },
+        mass: { value: 1, min: 0, max: 10, step: 0.1 },
+        forceMultiplier: { value: 0.001, min: 0, max: 2, step: 0.001 },
     })
 
     const arrowGltf = useGLTF("./glb/Arrow.glb")
@@ -52,13 +53,22 @@ export default function Ball() {
 
     const handlePointerMove = (event) => {
         // Track pointer movement here if user has clicked on sphere and hasn't released pointer and update force vector
+        
+        // if (ballRef.current) {
+        //     const ballPosition = ballRef.current.translation()
+        //     const ballPositionVector = new Vector3(ballPosition.x, ballPosition.y, ballPosition.z)
+        //     const pointerPosition = event.point
+        //     const relativePosition = pointerPosition.clone().sub(ballPositionVector) 
+        //     console.log("Hovering", relativePosition)
+        // }
         if (cameraMode !== "free" && isDragging && ballRef.current) {
             console.log("pointer move")
             const ballPosition = ballRef.current.translation()
             const ballPositionVector = new Vector3(ballPosition.x, ballPosition.y, ballPosition.z)
             const pointerPosition = event.point
 
-            const forceDirection = ballPositionVector.clone().sub(pointerPosition)
+            //const forceDirection = ballPositionVector.clone().sub(pointerPosition)
+            const forceDirection = pointerPosition.sub(ballPositionVector.clone())
 
             forceDirection.y = 0
 
@@ -101,7 +111,10 @@ export default function Ball() {
             const arrowDirection = forceVector.clone().normalize().negate()
             arrowGltf.scene.lookAt(arrowGltf.scene.position.clone().add(arrowDirection))
 
-            const arrowScale = forceVector.length() * 2
+            const arrowScale = forceVector.length() * 500
+
+            // console.log("arrowScale", arrowScale)
+
             arrowRef.current.scale.set(1, 1, arrowScale)
         } else {
             arrowRef.current.scale.set(1, 1, 1)
@@ -117,7 +130,7 @@ export default function Ball() {
             
             if (planeRef.current.position) {
                 planeRef.current.position.set(ballPosition.x, ballPosition.y + 0.01, ballPosition.z)
-                arrowRef.current.position.set(ballPosition.x, ballPosition.y + 0.01, ballPosition.z)
+                arrowRef.current.position.set(ballPosition.x, ballPosition.y, ballPosition.z)
             }
 
             updateArrow()
@@ -130,30 +143,50 @@ export default function Ball() {
                 const cameraPosition = ballPositionVector.clone().add(cameraOffset)
 
                 camera.position.lerp(cameraPosition, 0.1)
+                setFreeCameraSet(false)
             } else {
                 setCameraOffset(camera.position.clone().sub(ballPositionVector))
+
+                if ( !freeCameraSet ) {
+                    setOrbitTarget(ballPositionVector)
+                }
+
+                setFreeCameraSet(true)
             }
 
         }
     })
 
+    const ballGltf = useGLTF("./glb/Ball.glb")
+
+
+    // make ballGltf cast shadow
+    ballGltf.scene.traverse((child) => {
+        if (child.isMesh) {
+            child.castShadow = true
+        }
+    })
+
     return (
         <>
+
             <RigidBody
                 ref={ballRef}
                 colliders="ball"
+                ccd={true}
                 restitution={restitution} // Bounciness 0 = no bounce, 1 = full bounce
                 friction={friction}
                 linearDamping={linearDamping}
                 angularDamping={angularDamping}
                 mass={mass}
+                position={[0, 0.01, 0]}
                 >
                 <mesh
-                    onPointerDown={cameraMode === "follow" && handlePointerDown}                    
-                    >
-                    <sphereGeometry args={[0.5]} />
-                    <meshStandardMaterial color="red" />
-                </mesh>
+                    geometry={ballGltf.nodes.GolfBall_LowPoly.geometry}
+                    material={ballGltf.nodes.GolfBall_LowPoly.material}
+                    castShadow
+                    onPointerDown={cameraMode === "follow" && handlePointerDown}
+                    />
             </RigidBody>
 
             <mesh
@@ -162,7 +195,7 @@ export default function Ball() {
                 rotation={[-Math.PI / 2, 0, 0]}
                 visible={false}
             >
-                <circleGeometry args={[12, 16]} />
+                <circleGeometry args={[1, 12]} />
                 <meshStandardMaterial color="pink" />
             </mesh>
             <primitive 

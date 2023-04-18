@@ -1,16 +1,21 @@
 import './App.css'
 
+import { useState } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+import { OrbitControls, Sky, Environment } from '@react-three/drei'
 import { Physics, Debug, RigidBody, CuboidCollider } from '@react-three/rapier'
 import { useControls } from 'leva'
 
 import { useGame } from './hooks/useGame'
 import Ball from './components/Ball'
+import TestCourse from './components/TestCourse'
+import CourseSection from './components/CourseSection'
 
 function App() {
 
   const [ cameraMode, setCameraMode, toggleCameraMode ] = useGame((state) => [ state.cameraMode, state.setCameraMode, state.toggleCameraMode ])
+
+  const [ orbitTarget, setOrbitTarget ] = useState([0, 0, 0])
 
   const {
     grassRestitution,
@@ -29,99 +34,34 @@ function App() {
       <main className="h-screen">
 
         <Canvas
-          camera={{ position: [0, 2, 5] }}
+          camera={{ position: [0.25, 0.25, 0] }}
+          shadows={true}
           >
-          <ambientLight />
-          <pointLight position={[10, 10, 10]} />
-          <OrbitControls makeDefault enabled={cameraMode === 'free'} />
+          <Sky sunPosition={[2, 2, 2]} />
+          <Environment preset="sunset" />
+          <directionalLight position={[2, 2, 2]} intensity={1} castShadow />
+          <OrbitControls 
+            makeDefault 
+            enabled={cameraMode === 'free'} 
+            target={orbitTarget}
+            />
 
-          <Physics>
+          <Physics
+            timeSet="vary"
+            >
 
-            <Debug />
+            {/* <Debug /> */}
 
-            <Ball />
+            <Ball setOrbitTarget={setOrbitTarget} />
 
+            <CourseSection type="start" position={[0, 0, 0]} />
+            <CourseSection type="straight" position={[-2, 0, 0]} />
+            <CourseSection type="corner" position={[-4, 0, 0]} />
+            <CourseSection type="corner" position={[-4, 0, -2]} rotation={[0, Math.PI, 0]} />
+            <CourseSection type="end" position={[-6, 0, -2]} />
 
-
-            <RigidBody
-              type="fixed"
-              rotation={[-Math.PI / 2, 0, 0]}
-              position={[0, -1, 0]}
-              friction={grassFriction}
-              restitution={grassRestitution}
-              >
-              <mesh>
-                <planeGeometry args={[100, 100]} />
-                <meshStandardMaterial color="green" />
-              </mesh>
-            </RigidBody>
-
-            <RigidBody
-              type="fixed"
-              rotation={[0, 0, 0]}
-              position={[50, 0, 0]}
-              friction={wallFriction}
-              restitution={wallRestitution}
-              >
-              <mesh>
-                <boxGeometry args={[2, 3, 100]} />
-                <meshStandardMaterial color="grey" />
-              </mesh>
-            </RigidBody>
-            <RigidBody
-              type="fixed"
-              rotation={[0, 0, 0]}
-              position={[-50, 0, 0]}
-              friction={wallFriction}
-              restitution={wallRestitution}
-              >
-              <mesh>
-                <boxGeometry args={[2, 3, 100]} />
-                <meshStandardMaterial color="grey" />
-              </mesh>
-            </RigidBody>
-
-            <RigidBody
-              type="fixed"
-              rotation={[0, Math.PI / 2, 0]}
-              position={[0, 0, 50]}
-              friction={wallFriction}
-              restitution={wallRestitution}
-              >
-              <mesh>
-                <boxGeometry args={[2, 3, 100]} />
-                <meshStandardMaterial color="grey" />
-              </mesh>
-            </RigidBody>
-            <RigidBody
-              type="fixed"
-              rotation={[0, Math.PI / 2, 0]}
-              position={[0, 0, -50]}
-              friction={wallFriction}
-              restitution={wallRestitution}
-              >
-              <mesh>
-                <boxGeometry args={[2, 3, 100]} />
-                <meshStandardMaterial color="grey" />
-              </mesh>
-            </RigidBody>
-
-
-            <RigidBody
-              type="fixed"
-              rotation={[Math.PI / 4, 0, 0]}
-              position={[0, -1, 4]}
-              friction={wallFriction}
-              restitution={wallRestitution}
-              >
-              <mesh>
-                <boxGeometry args={[2, 2, 2]} />
-                <meshStandardMaterial color="gray" />
-              </mesh>
-            </RigidBody>
 
           </Physics>
-
 
         </Canvas>
 
