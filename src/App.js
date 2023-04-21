@@ -16,6 +16,7 @@ function App() {
   const [ cameraMode, setCameraMode, toggleCameraMode, strokeCount ] = useGame((state) => [ state.cameraMode, state.setCameraMode, state.toggleCameraMode, state.strokeCount ])
 
   const [ orbitTarget, setOrbitTarget ] = useState([0, 0, 0])
+  const [ modeSwitched, setModeSwitched ] = useState(false)
 
   return (
     <>
@@ -62,10 +63,16 @@ function App() {
           <div className="flex justify-between absolute bottom-0 w-full p-4 items-center">
             <button
               className="bg-gray-700 hover:bg-purple-600 text-white p-2 rounded-md pointer-events-auto"
-              onClick={toggleCameraMode}
+              onClick={() => {
+                toggleCameraMode()
+                setModeSwitched(true)
+              }}
               >
               {cameraMode === 'free' ? 'Play Mode' : 'Free Camera'}
             </button>
+            { !modeSwitched && <div className="bg-blue-400 text-white p-2 rounded-md">
+              <p><strong>Tip:</strong> Click and drag on the ball in play mode to start!</p>
+            </div> }
             <div className="bg-white p-2 rounded-md">
               <p>Stroke Count: { strokeCount }</p>
             </div>
