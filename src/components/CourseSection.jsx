@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useGLTF } from "@react-three/drei"
 import { RigidBody, CuboidCollider } from "@react-three/rapier"
 import { useControls } from "leva"
@@ -55,6 +55,7 @@ export function CourseStart(props) {
                 colliders="trimesh"
                 restitution={props.coursePhysics.wallRestitution}
                 friction={props.coursePhysics.wallFriction}
+                name="wall"
                 >
                 <mesh
                 geometry={mesh.CourseStartWalls.geometry}
@@ -95,6 +96,7 @@ export function CourseStraight(props) {
                 colliders="trimesh"
                 restitution={props.coursePhysics.wallRestitution}
                 friction={props.coursePhysics.wallFriction}
+                name="wall"
                 >
                 <mesh
                     geometry={mesh.CourseStraightWalls.geometry}
@@ -136,6 +138,7 @@ export function CourseCorner(props) {
                 colliders="trimesh"
                 restitution={props.coursePhysics.wallRestitution}
                 friction={props.coursePhysics.wallFriction}
+                name="wall"
                 >
                 <mesh
                     geometry={mesh.CourseTurnWalls.geometry}
@@ -151,9 +154,23 @@ export function CourseEnd(props) {
 
     const gltf = useGLTF('./glb/Course_End.glb')
 
+    const [ inHoleSound ] = useState(() => new Audio("./audio/ball_inHole.mp3"))
+
     const mesh = useMemo(() => {
         return gltf.nodes
     }, [gltf])
+
+    const endLevel = (event) => {
+
+        const collidedBody = event.colliderObject
+        
+        if (collidedBody.name === "player") {
+            inHoleSound.currentTime = 0
+            inHoleSound.volume = 0.5
+            inHoleSound.play()
+        }
+
+    }
 
     return (
         <>
@@ -174,6 +191,12 @@ export function CourseEnd(props) {
                     material={mesh.CourseEndGreen.children[1].material}
                     receiveShadow
                     />
+                <CuboidCollider
+                    sensor
+                    onIntersectionEnter={ endLevel }
+                    args={[0.06, 0.05, 0.05]}
+                    position={[-0.565, -0.06, 0]}
+                    />
             </RigidBody>
             <RigidBody
                 {...props}
@@ -181,6 +204,7 @@ export function CourseEnd(props) {
                 colliders="trimesh"
                 restitution={props.coursePhysics.wallRestitution}
                 friction={props.coursePhysics.wallFriction}
+                name="wall"
                 >
                 <mesh
                     geometry={mesh.CourseEndWalls.geometry}

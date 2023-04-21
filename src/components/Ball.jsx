@@ -3,7 +3,7 @@ import { Vector3 } from "three"
 import {
     RigidBody,
 } from "@react-three/rapier"
-import { useGLTF } from "@react-three/drei"
+import { useGLTF, PositionalAudio } from "@react-three/drei"
 import { useFrame } from "@react-three/fiber"
 
 import { useGame } from "../hooks/useGame"
@@ -22,6 +22,9 @@ export default function Ball({ setOrbitTarget }) {
     const [forceVector, setForceVector] = useState(null)
     const [cameraOffset, setCameraOffset] = useState(new Vector3(0, 2, 5))
     const [freeCameraSet, setFreeCameraSet] = useState(false)
+
+    const [ hitSound ] = useState(() => new Audio("./audio/ball_hitPutter.mp3"))
+    const [ hitWallSound ] = useState(() => new Audio("./audio/ball_hitWall.mp3"))
 
     const {
         restitution,
@@ -82,8 +85,13 @@ export default function Ball({ setOrbitTarget }) {
             
             if (cameraMode === "follow" && ballRef.current && forceVector) {
                 const force = forceVector.clone().multiplyScalar(forceMultiplier)
-                console.log("forceVector", forceVector)
+
                 ballRef.current.applyImpulse(force, true)
+
+                hitSound.currentTime = 0
+                hitSound.volume = forceVector.length()
+                hitSound.play()
+
                 addStroke()
             }
 
@@ -107,8 +115,6 @@ export default function Ball({ setOrbitTarget }) {
             arrowGltf.scene.lookAt(arrowGltf.scene.position.clone().add(arrowDirection))
 
             const arrowScale = forceVector.length() * 100
-
-            // console.log("arrowScale", arrowScale)
 
             arrowRef.current.scale.set(1, 1, arrowScale)
         } else {
@@ -152,12 +158,27 @@ export default function Ball({ setOrbitTarget }) {
         }
     })
 
+    const playBounceSound = (event) => {
+        // Detect what was hit and play sound if it was a wall
+        const collidedBody = event.colliderObject
+        
+        if (collidedBody.name === "wall") {
+            const vel = ballRef.current.linvel()
+            const velVector = new Vector3(vel.x, vel.y, vel.z)
+
+            hitWallSound.currentTime = 0
+            hitWallSound.volume = Math.min(velVector.length(), 1.0)
+            hitWallSound.play()
+        }
+    }
+
     return (
         <>
 
             <RigidBody
                 ref={ballRef}
                 colliders="ball"
+                name="player"
                 ccd={true}
                 restitution={restitution} // Bounciness 0 = no bounce, 1 = full bounce
                 friction={friction}
@@ -165,6 +186,7 @@ export default function Ball({ setOrbitTarget }) {
                 angularDamping={angularDamping}
                 mass={mass}
                 position={[0, 0.01, 0]}
+                onCollisionEnter={playBounceSound}
                 >
                 <mesh
                     geometry={ballGltf.nodes.GolfBall_LowPoly.geometry}
