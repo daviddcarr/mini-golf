@@ -3,7 +3,7 @@ import { Vector3 } from "three"
 import {
     RigidBody,
 } from "@react-three/rapier"
-import { useGLTF, PositionalAudio } from "@react-three/drei"
+import { useGLTF } from "@react-three/drei"
 import { useFrame } from "@react-three/fiber"
 
 import { useGame } from "../hooks/useGame"
@@ -12,7 +12,23 @@ import { useControls } from "leva"
 
 export default function Ball({ setOrbitTarget }) {
 
-    const [ cameraMode, addStroke ] = useGame(state => [ state.cameraMode, state.addStroke ])
+    const [ 
+        cameraMode, 
+        setCameraMode, 
+        cameraPosition,
+        setCameraPosition,
+        isHidden,
+        setIsHidden,
+        addStroke 
+    ] = useGame(state => [ 
+        state.cameraMode, 
+        state.setCameraMode, 
+        state.cameraPosition,
+        state.setCameraPosition,
+        state.isHidden,
+        state.setIsHidden,
+        state.addStroke 
+    ])
 
     const ballRef = useRef()
     const planeRef = useRef()
@@ -20,7 +36,7 @@ export default function Ball({ setOrbitTarget }) {
 
     const [isDragging, setIsDragging] = useState(false)
     const [forceVector, setForceVector] = useState(null)
-    const [cameraOffset, setCameraOffset] = useState(new Vector3(0, 2, 5))
+    //const [cameraOffset, setCameraOffset] = useState(new Vector3(0, 2, 5))
     const [freeCameraSet, setFreeCameraSet] = useState(false)
 
     const [ hitSound ] = useState(() => new Audio("./audio/ball_hitPutter.mp3"))
@@ -44,6 +60,24 @@ export default function Ball({ setOrbitTarget }) {
 
     const arrowGltf = useGLTF("./glb/Arrow.glb")
     const ballGltf = useGLTF("./glb/Ball.glb")
+
+    const resetPosition = () => {
+        console.log("Reset Ball Position")
+        setCameraMode("follow")
+        setCameraPosition(new Vector3(0.25, 0.25, 0))
+        setCameraMode("free")
+        setFreeCameraSet(true)
+        ballRef.current.setTranslation({x:0, y:0.01, z:0})
+        ballRef.current.setLinvel({x:0, y:0, z:0})
+        ballRef.current.setAngvel({x:0, y:0, z:0})
+    }
+
+    useEffect(() => {
+        if (isHidden) {
+            resetPosition()
+        }
+    }, [isHidden])
+
 
     const handlePointerDown = (event) => {
         // When user clicks on sphere, start tracking pointer movement
@@ -77,6 +111,11 @@ export default function Ball({ setOrbitTarget }) {
             setForceVector(forceDirection)
         }
     }
+    
+    useEffect(() => {
+        resetPosition()
+    }, [])
+
 
     useEffect(() => {
         const handlePointerUp = (event) => {    
@@ -141,18 +180,33 @@ export default function Ball({ setOrbitTarget }) {
                 camera.lookAt(cameraLookAt)
 
                 // add cameraOffset to ball position to get new camera position
-                const cameraPosition = ballPositionVector.clone().add(cameraOffset)
+                //const cameraPosition = ballPositionVector.clone().add(cameraOffset)
+                //camera.position.lerp(cameraPosition, 0.1)
 
                 camera.position.lerp(cameraPosition, 0.1)
+
+                console.log("Camera Position", cameraPosition)
+
                 setFreeCameraSet(false)
             } else {
-                setCameraOffset(camera.position.clone().sub(ballPositionVector))
+                //setCameraOffset(camera.position.clone().sub(ballPositionVector))
 
                 if ( !freeCameraSet ) {
                     setOrbitTarget(ballPositionVector)
                 }
 
                 setFreeCameraSet(true)
+
+                setCameraPosition(camera.position)
+                console.log("Camera Position", cameraPosition)
+            }
+
+            if ( ballRef.current.translation().y < -4 ) {
+                resetPosition()
+                camera.position.set(0.25, 0.25, 0)
+                camera.lookAt(0, 0, 0)           
+                //camera={{ position: [0.25, 0.25, 0] }}
+                    
             }
 
         }
